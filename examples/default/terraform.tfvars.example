@@ -1,0 +1,51 @@
+# --- Provider --- #
+region = "<us-east-1>"
+
+# --- Common --- #
+friendly_name_prefix = "<acme>" #This should be unique across all deployments
+common_tags = {
+  App   = "<boundary-controller>"
+  Env   = "<sandbox>"
+  Owner = "<YourName>"
+}
+
+# --- Prereqs --- #
+boundary_license_secret_arn           = "<my-boundary-license-secret-arn>"
+boundary_tls_cert_secret_arn          = "<my-boundary-tls-cert-secret-arn>"
+boundary_tls_privkey_secret_arn       = "<my-boundary-tls-cert-private-key-secret-arn>"
+boundary_tls_ca_bundle_secret_arn     = "<my-boundary-tls-ca-bundle-secret-arn>"
+boundary_database_password_secret_arn = "<my-database-password-secret-arn>"
+
+# ---Boundary configuration settings --- #
+boundary_fqdn               = "<boundary.aws.company.com>"
+enable_session_recording    = "<false>"
+
+# --- Networking --- #
+vpc_id                           = "<my-vpc-id>"
+api_lb_subnet_ids                = ["<my-lb-subnet-id-a>", "<my-lb-subnet-id-b>", "<my-lb-subnet-id-c>"]
+api_lb_is_internal               = <false>
+cluster_lb_subnet_ids            = ["<my-lb-subnet-id-a>", "<my-lb-subnet-id-b>", "<my-lb-subnet-id-c>"]
+controller_subnet_ids            = ["<my-ec2-subnet-id-a>", "<my-ec2-subnet-id-b>", "<my-ec2-subnet-id-c>"]
+rds_subnet_ids                   = ["<my-db-subnet-id-a>", "<my-db-subnet-id-b>", "<my-db-subnet-id-c>"]
+cidr_allow_ingress_boundary_443  = ["<10.0.0.0/16>", "<1.2.3.4/32>"]
+cidr_allow_ingress_boundary_9201 = ["<10.0.0.0/16>"]
+sg_allow_ingress_boundary_9201   = ["<sg-12345678901234567">]
+cidr_allow_ingress_ec2_ssh       = ["<10.0.0.0/16>"]
+
+# --- DNS (optional) --- #
+create_route53_boundary_dns_record = <true>
+route53_boundary_hosted_zone_name  = "<aws.company.com>"
+
+# --- Compute --- #
+asg_instance_count = 1
+ec2_ssh_key_pair   = "<my-ec2-key-pair>"
+ec2_allow_ssm      = <true>
+
+# --- Database --- #
+rds_skip_final_snapshot          = true
+
+# --- KMS --- #
+create_root_kms_key     = "<true>"
+create_recovery_kms_key = "<true>"
+create_worker_kms_key   = "<true>"
+create_bsr_kms_key      = "<false>"
