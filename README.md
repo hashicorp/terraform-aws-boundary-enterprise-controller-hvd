@@ -37,7 +37,7 @@ This diagram shows a Boundary deployment with one controller and two sets of Bou
 - **Boundary TLS certificate private key** - file in PEM format, base64-encoded into a string, and stored as a plaintext secret.
 - **TLS CA bundle** - file in PEM format, base64-encoded into a string, and stored as a plaintext secret.
 
->📝 Note: see the [Boundary cert rotation docs](https://github.com/hashicorp/terraform-aws-boundary-enterprise-controller-hvd/blob/main/docs//boundary-cert-rotation.md) for instructions on how to base64-encode the certificates with proper formatting.
+>📝 Note: see the [Boundary cert rotation docs](https://github.com/hashicorp/terraform-aws-boundary-enterprise-controller-hvd/blob/main/docs/boundary-cert-rotation.md) for instructions on how to base64-encode the certificates with proper formatting.
 
 ### Compute
 
