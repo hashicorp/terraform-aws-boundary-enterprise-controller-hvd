@@ -422,6 +422,8 @@ function main {
   install_awscli "$OS_DISTRO"
   user_group_create
   directory_create
+	checksum_verify
+  log "INFO" "Installing Boundary version $BOUNDARY_VERSION for $OS_ARCH"
   install_boundary_binary
   retrieve_license_from_awsssm "${boundary_license_secret_arn}"
   retrieve_certs_from_awssm "${boundary_tls_cert_secret_arn}" "$BOUNDARY_DIR_TLS/cert.pem"
