@@ -5,7 +5,7 @@
 # User Data (cloud-init) arguments
 #------------------------------------------------------------------------------
 locals {
-  custom_install_tpl          = var.custom_install_template != null ? "${path.cwd}/templates/${var.custom_install_template}" : "${path.module}/templates/nomad_custom_data.sh.tpl"
+  custom_install_tpl          = var.custom_install_template != null ? "${path.cwd}/templates/${var.custom_install_template}" : "${path.module}/templates/boundary_custom_data.sh.tpl"
   user_data_template_rendered = templatefile(local.custom_install_tpl, local.custom_data_args)
   custom_data_args = {
 
