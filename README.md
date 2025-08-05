@@ -125,7 +125,14 @@ Below are links to docs pages related to deployment customizations and day 2 ope
 - [Updating/modifying Boundary configuration settings](https://github.com/hashicorp/terraform-aws-boundary-enterprise-controller-hvd/blob/main/docs/boundary-config-settings.md)
 - [Authenticate to Boundary Cluster with Boundary CLI](https://github.com/hashicorp/terraform-aws-boundary-enterprise-controller-hvd/blob/main/docs/boundary-cli-auth.md)
 
-<!-- BEGIN_TF_DOCS -->
+
+## Troubleshooting
+
+During deployment the output of the `user_data` script can be traced in `/var/log/cloud-init.log`, `/var/log/cloud-init-output.log` and `/var/log/vault-cloud-init.log` due to `set -xeuo pipefail` in the default  `install-vault.sh.tpl`
+For help debugging cloud init and user data scripts
+- <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html#userdata-linux>
+- <https://cloudinit.readthedocs.io/en/latest/howto/debugging.html#cloud-init-ran-but-didn-t-do-what-i-want-it-to>
+
 ## Module support
 
 This open source software is maintained by the HashiCorp Technical Field Organization, independently of our enterprise products. While our Support Engineering team provides dedicated support for our enterprise offerings, this open source software is not included.
@@ -135,18 +142,19 @@ This open source software is maintained by the HashiCorp Technical Field Organiz
 
 Please note that there is no official Service Level Agreement (SLA) for support of this software as a HashiCorp customer. This software falls under the definition of Community Software/Versions in your Agreement. We appreciate your understanding and collaboration in improving our open source projects.
 
+<!-- BEGIN_TF_DOCS -->
 ## Requirements
 
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.9 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.51.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.51.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 5.0 |
 
 ## Resources
 
@@ -240,21 +248,26 @@ Please note that there is no official Service Level Agreement (SLA) for support 
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_api_lb_subnet_ids"></a> [api\_lb\_subnet\_ids](#input\_api\_lb\_subnet\_ids) | List of subnet IDs to use for the API load balancer. If the load balancer is external, then these should be public subnets. | `list(string)` | n/a | yes |
+| <a name="input_boundary_database_password_secret_arn"></a> [boundary\_database\_password\_secret\_arn](#input\_boundary\_database\_password\_secret\_arn) | ARN of AWS Secrets Manager secret for the Boundary RDS Aurora (PostgreSQL) database password. | `string` | n/a | yes |
+| <a name="input_boundary_fqdn"></a> [boundary\_fqdn](#input\_boundary\_fqdn) | Fully qualified domain name of boundary instance. This name should resolve to the load balancer IP address and will be what clients use to access boundary. | `string` | n/a | yes |
+| <a name="input_boundary_tls_ca_bundle_secret_arn"></a> [boundary\_tls\_ca\_bundle\_secret\_arn](#input\_boundary\_tls\_ca\_bundle\_secret\_arn) | ARN of AWS Secrets Manager secret for private/custom TLS Certificate Authority (CA) bundle in PEM format. Secret must be stored as a base64-encoded string. | `string` | n/a | yes |
+| <a name="input_cluster_lb_subnet_ids"></a> [cluster\_lb\_subnet\_ids](#input\_cluster\_lb\_subnet\_ids) | List of subnet IDs to use for the Cluster load balancer. If the load balancer is external, then these should be public subnets. | `list(string)` | n/a | yes |
+| <a name="input_controller_subnet_ids"></a> [controller\_subnet\_ids](#input\_controller\_subnet\_ids) | List of subnet IDs to use for the EC2 instance. Private subnets is the best practice here. | `list(string)` | n/a | yes |
+| <a name="input_friendly_name_prefix"></a> [friendly\_name\_prefix](#input\_friendly\_name\_prefix) | Friendly name prefix used for uniquely naming AWS resources. | `string` | n/a | yes |
+| <a name="input_rds_subnet_ids"></a> [rds\_subnet\_ids](#input\_rds\_subnet\_ids) | List of subnet IDs to use for RDS database subnet group. Private subnets is the best practice here. | `list(string)` | n/a | yes |
+| <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | ID of VPC where Boundary will be deployed. | `string` | n/a | yes |
 | <a name="input_additional_package_names"></a> [additional\_package\_names](#input\_additional\_package\_names) | List of additional repository package names to install | `set(string)` | `[]` | no |
 | <a name="input_api_lb_is_internal"></a> [api\_lb\_is\_internal](#input\_api\_lb\_is\_internal) | Boolean to create an internal (private) API load balancer. The `api_lb_subnet_ids` must be private subnets if this is set to `true`. | `bool` | `true` | no |
-| <a name="input_api_lb_subnet_ids"></a> [api\_lb\_subnet\_ids](#input\_api\_lb\_subnet\_ids) | List of subnet IDs to use for the API load balancer. If the load balancer is external, then these should be public subnets. | `list(string)` | n/a | yes |
 | <a name="input_asg_health_check_grace_period"></a> [asg\_health\_check\_grace\_period](#input\_asg\_health\_check\_grace\_period) | The amount of time to wait for a new Boundary EC2 instance to become healthy. If this threshold is breached, the ASG will terminate the instance and launch a new one. | `number` | `900` | no |
 | <a name="input_asg_instance_count"></a> [asg\_instance\_count](#input\_asg\_instance\_count) | Desired number of Boundary EC2 instances to run in Autoscaling Group. Leave at `1` unless Active/Active is enabled. | `number` | `1` | no |
 | <a name="input_asg_max_size"></a> [asg\_max\_size](#input\_asg\_max\_size) | Max number of Boundary EC2 instances to run in Autoscaling Group. | `number` | `3` | no |
 | <a name="input_boundary_database_name"></a> [boundary\_database\_name](#input\_boundary\_database\_name) | Name of Boundary database to create within RDS global cluster. | `string` | `"boundary"` | no |
 | <a name="input_boundary_database_parameters"></a> [boundary\_database\_parameters](#input\_boundary\_database\_parameters) | PostgreSQL server parameters for the connection URI. Used to configure the PostgreSQL connection. | `string` | `"sslmode=require"` | no |
-| <a name="input_boundary_database_password_secret_arn"></a> [boundary\_database\_password\_secret\_arn](#input\_boundary\_database\_password\_secret\_arn) | ARN of AWS Secrets Manager secret for the Boundary RDS Aurora (PostgreSQL) database password. | `string` | n/a | yes |
 | <a name="input_boundary_database_user"></a> [boundary\_database\_user](#input\_boundary\_database\_user) | Username for Boundary RDS database cluster. | `string` | `"boundary"` | no |
-| <a name="input_boundary_fqdn"></a> [boundary\_fqdn](#input\_boundary\_fqdn) | Fully qualified domain name of boundary instance. This name should resolve to the load balancer IP address and will be what clients use to access boundary. | `string` | n/a | yes |
 | <a name="input_boundary_license_reporting_opt_out"></a> [boundary\_license\_reporting\_opt\_out](#input\_boundary\_license\_reporting\_opt\_out) | Boolean to opt out of license reporting. | `bool` | `false` | no |
 | <a name="input_boundary_license_secret_arn"></a> [boundary\_license\_secret\_arn](#input\_boundary\_license\_secret\_arn) | ARN of AWS Secrets Manager secret for Boundary license file. | `string` | `null` | no |
 | <a name="input_boundary_session_recording_s3_kms_key_arn"></a> [boundary\_session\_recording\_s3\_kms\_key\_arn](#input\_boundary\_session\_recording\_s3\_kms\_key\_arn) | ARN of KMS customer managed key (CMK) to encrypt Boundary Session Recording Bucket with. | `string` | `null` | no |
-| <a name="input_boundary_tls_ca_bundle_secret_arn"></a> [boundary\_tls\_ca\_bundle\_secret\_arn](#input\_boundary\_tls\_ca\_bundle\_secret\_arn) | ARN of AWS Secrets Manager secret for private/custom TLS Certificate Authority (CA) bundle in PEM format. Secret must be stored as a base64-encoded string. | `string` | n/a | yes |
 | <a name="input_boundary_tls_cert_secret_arn"></a> [boundary\_tls\_cert\_secret\_arn](#input\_boundary\_tls\_cert\_secret\_arn) | ARN of AWS Secrets Manager secret for Boundary TLS certificate in PEM format. Secret must be stored as a base64-encoded string. | `string` | `null` | no |
 | <a name="input_boundary_tls_disable"></a> [boundary\_tls\_disable](#input\_boundary\_tls\_disable) | Boolean to disable TLS for boundary. | `bool` | `false` | no |
 | <a name="input_boundary_tls_privkey_secret_arn"></a> [boundary\_tls\_privkey\_secret\_arn](#input\_boundary\_tls\_privkey\_secret\_arn) | ARN of AWS Secrets Manager secret for Boundary TLS private key in PEM format. Secret must be stored as a base64-encoded string. | `string` | `null` | no |
@@ -265,15 +278,14 @@ Please note that there is no official Service Level Agreement (SLA) for support 
 | <a name="input_cidr_allow_ingress_boundary_443"></a> [cidr\_allow\_ingress\_boundary\_443](#input\_cidr\_allow\_ingress\_boundary\_443) | List of CIDR ranges to allow ingress traffic on port 443 to Load Balancer server. | `list(string)` | <pre>[<br/>  "0.0.0.0/0"<br/>]</pre> | no |
 | <a name="input_cidr_allow_ingress_boundary_9201"></a> [cidr\_allow\_ingress\_boundary\_9201](#input\_cidr\_allow\_ingress\_boundary\_9201) | List of CIDR ranges to allow ingress traffic on port 9201 to Controllers. | `list(string)` | `null` | no |
 | <a name="input_cidr_allow_ingress_ec2_ssh"></a> [cidr\_allow\_ingress\_ec2\_ssh](#input\_cidr\_allow\_ingress\_ec2\_ssh) | List of CIDR ranges to allow SSH ingress to Boundary EC2 instance (i.e. bastion IP, client/workstation IP, etc.). | `list(string)` | `[]` | no |
-| <a name="input_cluster_lb_subnet_ids"></a> [cluster\_lb\_subnet\_ids](#input\_cluster\_lb\_subnet\_ids) | List of subnet IDs to use for the Cluster load balancer. If the load balancer is external, then these should be public subnets. | `list(string)` | n/a | yes |
 | <a name="input_common_tags"></a> [common\_tags](#input\_common\_tags) | Map of common tags for taggable AWS resources. | `map(string)` | `{}` | no |
-| <a name="input_controller_subnet_ids"></a> [controller\_subnet\_ids](#input\_controller\_subnet\_ids) | List of subnet IDs to use for the EC2 instance. Private subnets is the best practice here. | `list(string)` | n/a | yes |
 | <a name="input_create_bsr_kms_key"></a> [create\_bsr\_kms\_key](#input\_create\_bsr\_kms\_key) | Boolean to create a KMS customer managed key (CMK) for Boundary Session Recording. | `bool` | `false` | no |
 | <a name="input_create_lb"></a> [create\_lb](#input\_create\_lb) | Boolean to create an AWS Network Load Balancer for boundary. | `bool` | `true` | no |
 | <a name="input_create_recovery_kms_key"></a> [create\_recovery\_kms\_key](#input\_create\_recovery\_kms\_key) | Boolean to create a KMS customer managed key (CMK) for Boundary Recovery. | `bool` | `true` | no |
 | <a name="input_create_root_kms_key"></a> [create\_root\_kms\_key](#input\_create\_root\_kms\_key) | Boolean to create a KMS customer managed key (CMK) for Boundary Root. | `bool` | `true` | no |
 | <a name="input_create_route53_boundary_dns_record"></a> [create\_route53\_boundary\_dns\_record](#input\_create\_route53\_boundary\_dns\_record) | Boolean to create Route53 Alias Record for `boundary_hostname` resolving to Load Balancer DNS name. If `true`, `route53_hosted_zone_boundary` is also required. | `bool` | `false` | no |
 | <a name="input_create_worker_kms_key"></a> [create\_worker\_kms\_key](#input\_create\_worker\_kms\_key) | Boolean to create a KMS customer managed key (CMK) for Boundary Worker. | `bool` | `true` | no |
+| <a name="input_custom_install_template"></a> [custom\_install\_template](#input\_custom\_install\_template) | Filename of a custom Install script template to use in place of the built-in user\_data script. The file must exist within a directory named './templates' in your current working directory. | `string` | `null` | no |
 | <a name="input_ebs_iops"></a> [ebs\_iops](#input\_ebs\_iops) | The amount of IOPS to provision for a `gp3` volume. Must be at least `3000`. | `number` | `3000` | no |
 | <a name="input_ebs_is_encrypted"></a> [ebs\_is\_encrypted](#input\_ebs\_is\_encrypted) | Boolean for encrypting the root block device of the Boundary EC2 instance(s). | `bool` | `false` | no |
 | <a name="input_ebs_kms_key_arn"></a> [ebs\_kms\_key\_arn](#input\_ebs\_kms\_key\_arn) | ARN of KMS key to encrypt EC2 EBS volumes. | `string` | `null` | no |
@@ -286,7 +298,6 @@ Please note that there is no official Service Level Agreement (SLA) for support 
 | <a name="input_ec2_os_distro"></a> [ec2\_os\_distro](#input\_ec2\_os\_distro) | Linux OS distribution for Boundary EC2 instance. Choose from `amzn2`, `ubuntu`, `rhel`, `centos`. | `string` | `"ubuntu"` | no |
 | <a name="input_ec2_ssh_key_pair"></a> [ec2\_ssh\_key\_pair](#input\_ec2\_ssh\_key\_pair) | Name of existing SSH key pair to attach to Boundary EC2 instance. | `string` | `""` | no |
 | <a name="input_enable_session_recording"></a> [enable\_session\_recording](#input\_enable\_session\_recording) | Boolean to enable session recording. | `bool` | `false` | no |
-| <a name="input_friendly_name_prefix"></a> [friendly\_name\_prefix](#input\_friendly\_name\_prefix) | Friendly name prefix used for uniquely naming AWS resources. | `string` | n/a | yes |
 | <a name="input_is_secondary_region"></a> [is\_secondary\_region](#input\_is\_secondary\_region) | Boolean indicating whether this Boundary instance deployment is in the primary or secondary (replica) region. | `bool` | `false` | no |
 | <a name="input_kms_bsr_cmk_alias"></a> [kms\_bsr\_cmk\_alias](#input\_kms\_bsr\_cmk\_alias) | Alias for KMS customer managed key (CMK). | `string` | `"boundary-session-recording"` | no |
 | <a name="input_kms_cmk_deletion_window"></a> [kms\_cmk\_deletion\_window](#input\_kms\_cmk\_deletion\_window) | Duration in days to destroy the key after it is deleted. Must be between 7 and 30 days. | `number` | `7` | no |
@@ -313,13 +324,11 @@ Please note that there is no official Service Level Agreement (SLA) for support 
 | <a name="input_rds_skip_final_snapshot"></a> [rds\_skip\_final\_snapshot](#input\_rds\_skip\_final\_snapshot) | Boolean to enable RDS to take a final database snapshot before destroying. | `bool` | `false` | no |
 | <a name="input_rds_source_region"></a> [rds\_source\_region](#input\_rds\_source\_region) | Source region for RDS cross-region replication. Only required when `is_secondary_region` is `true`. | `string` | `null` | no |
 | <a name="input_rds_storage_encrypted"></a> [rds\_storage\_encrypted](#input\_rds\_storage\_encrypted) | Boolean to encrypt RDS storage. | `bool` | `false` | no |
-| <a name="input_rds_subnet_ids"></a> [rds\_subnet\_ids](#input\_rds\_subnet\_ids) | List of subnet IDs to use for RDS database subnet group. Private subnets is the best practice here. | `list(string)` | n/a | yes |
 | <a name="input_recovery_kms_key_arn"></a> [recovery\_kms\_key\_arn](#input\_recovery\_kms\_key\_arn) | ARN of KMS key to use for Boundary recovery. | `string` | `null` | no |
 | <a name="input_root_kms_key_arn"></a> [root\_kms\_key\_arn](#input\_root\_kms\_key\_arn) | ARN of KMS key to use for Boundary Root. | `string` | `null` | no |
 | <a name="input_route53_boundary_hosted_zone_is_private"></a> [route53\_boundary\_hosted\_zone\_is\_private](#input\_route53\_boundary\_hosted\_zone\_is\_private) | Boolean indicating if `route53_boundary_hosted_zone_name` is a private hosted zone. | `bool` | `false` | no |
 | <a name="input_route53_boundary_hosted_zone_name"></a> [route53\_boundary\_hosted\_zone\_name](#input\_route53\_boundary\_hosted\_zone\_name) | Route53 Hosted Zone name to create `boundary_hostname` Alias record in. Required if `create_boundary_alias_record` is `true`. | `string` | `null` | no |
 | <a name="input_sg_allow_ingress_boundary_9201"></a> [sg\_allow\_ingress\_boundary\_9201](#input\_sg\_allow\_ingress\_boundary\_9201) | List of Security Groups to allow ingress traffic on port 9201 to Controllers. | `list(string)` | `[]` | no |
-| <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | ID of VPC where Boundary will be deployed. | `string` | n/a | yes |
 | <a name="input_worker_kms_key_arn"></a> [worker\_kms\_key\_arn](#input\_worker\_kms\_key\_arn) | ARN of KMS key to use for Boundary worker. | `string` | `null` | no |
 
 ## Outputs
