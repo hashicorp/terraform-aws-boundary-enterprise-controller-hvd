@@ -2,14 +2,6 @@
 # SPDX-License-Identifier: MPL-2.0
 
 #------------------------------------------------------------------------------
-# Provider
-#------------------------------------------------------------------------------
-variable "region" {
-  type        = string
-  description = "AWS region where TFE will be deployed."
-}
-
-#------------------------------------------------------------------------------
 # Common
 #------------------------------------------------------------------------------
 variable "friendly_name_prefix" {
@@ -320,6 +312,17 @@ variable "ebs_iops" {
       var.ebs_iops <= 16000
     )
     error_message = "The IOPS must be at least `3000` GB and lower than `16000` (16TB)."
+  }
+}
+
+variable "custom_install_template" {
+  type        = string
+  description = "Filename of a custom Install script template to use in place of the built-in user_data script. The file must exist within a directory named './templates' in your current working directory."
+  default     = null
+
+  validation {
+    condition     = var.custom_install_template != null ? fileexists("${path.cwd}/templates/${var.custom_install_template}") : true
+    error_message = "File not found. Ensure the file exists within a directory named './templates' relative to your current working directory."
   }
 }
 
