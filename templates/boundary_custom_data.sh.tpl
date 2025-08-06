@@ -15,7 +15,6 @@ BOUNDARY_USER="boundary"
 BOUNDARY_GROUP="boundary"
 # BOUNDARY_INSTALL_URL="${boundary_install_url}"
 PRODUCT="boundary"
-OS_ARCH="linux_$( dpkg --print-architecture )"
 BOUNDARY_VERSION="${boundary_version}"
 VERSION=$BOUNDARY_VERSION
 REQUIRED_PACKAGES="jq unzip"
@@ -29,6 +28,29 @@ function log {
   local log_entry="$timestamp [$level] - $message"
 
   echo "$log_entry" | tee -a "$LOGFILE"
+}
+
+function detect_architecture {
+  local ARCHITECTURE=""
+  local OS_ARCH_DETECTED=$(uname -m)
+
+  case "$OS_ARCH_DETECTED" in
+    "x86_64"*)
+      ARCHITECTURE="linux_amd64"
+      ;;
+    "aarch64"*)
+      ARCHITECTURE="linux_arm64"
+      ;;
+		"arm"*)
+      ARCHITECTURE="linux_arm"
+			;;
+    *)
+      log "ERROR" "Unsupported architecture detected: '$OS_ARCH_DETECTED'. "
+		  exit_script 1
+  esac
+
+  echo "$ARCHITECTURE"
+
 }
 
 function detect_os_distro {
@@ -141,21 +163,34 @@ function directory_create {
 }
 
 function checksum_verify {
+  local os_arch="$1"
+
   # https://www.hashicorp.com/en/trust/security
   # checksum_verify downloads the $$PRODUCT binary and verifies its integrity
   log "INFO" "Verifying the integrity of the $${PRODUCT} binary."
   export GNUPGHOME=./.gnupg
+  log "INFO" "Importing HashiCorp GPG key."
   sudo curl -s https://www.hashicorp.com/.well-known/pgp-key.txt | gpg --import
 
-	log "INFO" "Downloading $${PRODUCT} Enterprise binary"
+	log "INFO" "Downloading $${PRODUCT} binary"
   sudo curl -Os https://releases.hashicorp.com/"$${PRODUCT}"/"$${VERSION}"/"$${PRODUCT}"_"$${VERSION}"_"$${OS_ARCH}".zip
+	log "INFO" "Downloading Vault Enterprise binary checksum files"
   sudo curl -Os https://releases.hashicorp.com/"$${PRODUCT}"/"$${VERSION}"/"$${PRODUCT}"_"$${VERSION}"_SHA256SUMS
+	log "INFO" "Downloading Vault Enterprise binary checksum signature file"
   sudo curl -Os https://releases.hashicorp.com/"$${PRODUCT}"/"$${VERSION}"/"$${PRODUCT}"_"$${VERSION}"_SHA256SUMS.sig
-  # Verify the signature file is untampered.
+  log "INFO" "Verifying the signature file is untampered."
   gpg --verify "$${PRODUCT}"_"$${VERSION}"_SHA256SUMS.sig "$${PRODUCT}"_"$${VERSION}"_SHA256SUMS
-
-  # Verify the SHASUM matches the archive.
-  shasum -a 256 -c "$${PRODUCT}"_"$${VERSION}"_SHA256SUMS --ignore-missing
+	if [[ $? -ne 0 ]]; then
+		log "ERROR" "Gpg verification failed for SHA256SUMS."
+		exit_script 1
+	fi
+  if [ -x "$(command -v sha256sum)" ]; then
+		log "INFO" "Using sha256sum to verify the checksum of the $${PRODUCT} binary."
+		sha256sum -c "$${PRODUCT}"_"$${VERSION}"_SHA256SUMS --ignore-missing
+	else
+		log "INFO" "Using shasum to verify the checksum of the $${PRODUCT} binary."
+		shasum -a 256 -c "$${PRODUCT}"_"$${VERSION}"_SHA256SUMS --ignore-missing
+	fi
 	if [[ $? -ne 0 ]]; then
 		log "ERROR" "Checksum verification failed for the $${PRODUCT} binary."
 		exit_script 1
@@ -163,23 +198,16 @@ function checksum_verify {
 
 	log "INFO" "Checksum verification passed for the $${PRODUCT} binary."
 
-	# Remove the downloaded files to clean up
+	log "INFO" "Removing the downloaded files to clean up"
 	sudo rm -f "$${PRODUCT}"_"$${VERSION}"_SHA256SUMS "$${PRODUCT}"_"$${VERSION}"_SHA256SUMS.sig
 
 }
 
 # install_boundary_binary downloads the Boundary binary and puts it in dedicated bin directory
 function install_boundary_binary {
+  local os_arch="$1"
+
   log "INFO" "Installing Boundary binary to: $BOUNDARY_DIR_BIN..."
-
-  # # Download the Boundary binary to the dedicated bin directory
-  # sudo curl -so $BOUNDARY_DIR_BIN/boundary.zip $BOUNDARY_INSTALL_URL
-
-  # # Unzip the Boundary binary
-  # sudo unzip $BOUNDARY_DIR_BIN/boundary.zip boundary -d $BOUNDARY_DIR_BIN
-  # sudo unzip $BOUNDARY_DIR_BIN/boundary.zip -x boundary -d $BOUNDARY_DIR_LICENSE
-
-  # sudo rm $BOUNDARY_DIR_BIN/boundary.zip
 
   log "INFO" "Done installing Boundary binary."
 	sudo unzip "$${PRODUCT}"_"$${BOUNDARY_VERSION}"_"$${OS_ARCH}".zip  boundary -d $BOUNDARY_DIR_BIN
@@ -417,14 +445,16 @@ function main {
 
   OS_DISTRO=$(detect_os_distro)
   log "INFO" "Detected Linux OS distro is '$OS_DISTRO'."
+	OS_ARCH=$(detect_architecture)
+  log "INFO" "Detected Linux OS architecture is '$OS_ARCH'."
   scrape_vm_info
   install_prereqs "$OS_DISTRO"
   install_awscli "$OS_DISTRO"
   user_group_create
   directory_create
-	checksum_verify
+	checksum_verify "$OS_ARCH"
   log "INFO" "Installing Boundary version $BOUNDARY_VERSION for $OS_ARCH"
-  install_boundary_binary
+  install_boundary_binary "$OS_ARCH"
   retrieve_license_from_awsssm "${boundary_license_secret_arn}"
   retrieve_certs_from_awssm "${boundary_tls_cert_secret_arn}" "$BOUNDARY_DIR_TLS/cert.pem"
   retrieve_certs_from_awssm "${boundary_tls_privkey_secret_arn}" "$BOUNDARY_DIR_TLS/key.pem"
