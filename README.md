@@ -6,7 +6,7 @@ Terraform module aligned with HashiCorp Validated Designs (HVD) to deploy Bounda
 
 This diagram shows a Boundary deployment with one controller and two sets of Boundary Workers, one for ingress and another for egress. Please review [Boundary deployment customizations doc](https://github.com/hashicorp/terraform-aws-boundary-enterprise-controller-hvd/blob/main/docs/boundary-deployment-customizations.md) to understand different deployment settings for the Boundary deployment.
 
-![Boundary on AWS](https://github.com/hashicorp/terraform-aws-boundary-enterprise-controller-hvd/blob/main/docs/images/boundary-diagram.png)
+![Boundary on AWS](https://raw.githubusercontent.com/hashicorp/terraform-aws-boundary-enterprise-controller-hvd/refs/heads/main/docs/images/boundary-diagram.png)
 
 ## Prerequisites
 
