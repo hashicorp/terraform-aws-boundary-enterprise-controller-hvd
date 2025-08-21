@@ -87,7 +87,9 @@ function install_prereqs {
   elif [[ "$OS_DISTRO" == "rhel" ]]; then
     yum install -y $REQUIRED_PACKAGES $ADDITIONAL_PACKAGES
   elif [[ "$OS_DISTRO" == "amzn2023" ]]; then
-    yum install -y $REQUIRED_PACKAGES $ADDITIONAL_PACKAGES
+    dnf install -y $REQUIRED_PACKAGES $ADDITIONAL_PACKAGES
+    log "INFO" "Enabling gnupg2-full for Amazon Linux 2023."
+    dnf swap gnupg2-minimal gnupg2-full -y
   else
     log "ERROR" "Unsupported OS distro '$OS_DISTRO'. Exiting."
     exit_script 1
