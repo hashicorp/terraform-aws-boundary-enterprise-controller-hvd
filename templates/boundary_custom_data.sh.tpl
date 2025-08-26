@@ -73,6 +73,7 @@ function detect_os_distro {
     *)
       log "ERROR" "'$OS_DISTRO_NAME' is not a supported Linux OS distro for Boundary."
       exit_script 1
+			;;
   esac
   echo "$OS_DISTRO_DETECTED"
 }
