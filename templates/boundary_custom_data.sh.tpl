@@ -13,7 +13,6 @@ BOUNDARY_DIR_LOGS="/var/log/boundary"
 BOUNDARY_DIR_BIN="${boundary_dir_bin}"
 BOUNDARY_USER="boundary"
 BOUNDARY_GROUP="boundary"
-# BOUNDARY_INSTALL_URL="${boundary_install_url}"
 PRODUCT="boundary"
 BOUNDARY_VERSION="${boundary_version}"
 VERSION=$BOUNDARY_VERSION
@@ -164,7 +163,7 @@ function directory_create {
 
   log "INFO" "Done creating necessary directories."
 }
-
+# checksum_verify downloads the $$PRODUCT binary for extraction and verifies its integrity
 function checksum_verify {
   local OS_ARCH="$1"
 
