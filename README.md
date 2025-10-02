@@ -128,7 +128,7 @@ Below are links to docs pages related to deployment customizations and day 2 ope
 
 ## Troubleshooting
 
-During deployment the output of the `user_data` script can be traced in `/var/log/cloud-init.log`, `/var/log/cloud-init-output.log` and `/var/log/vault-cloud-init.log` due to `set -xeuo pipefail` in the default  `install-vault.sh.tpl`
+During deployment the output of the `user_data` script can be traced in `/var/log/cloud-init.log`, `/var/log/cloud-init-output.log` and `/var/log/boundary-cloud-init.log` due to `set -xeuo pipefail` in the default  `boundary_custom_data.sh.tpl`
 For help debugging cloud init and user data scripts
 - <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html#userdata-linux>
 - <https://cloudinit.readthedocs.io/en/latest/howto/debugging.html#cloud-init-ran-but-didn-t-do-what-i-want-it-to>
