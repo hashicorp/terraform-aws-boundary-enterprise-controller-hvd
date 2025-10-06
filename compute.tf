@@ -5,6 +5,8 @@
 # User Data (cloud-init) arguments
 #------------------------------------------------------------------------------
 locals {
+  custom_install_tpl          = var.custom_install_template != null ? "${path.cwd}/templates/${var.custom_install_template}" : "${path.module}/templates/boundary_custom_data.sh.tpl"
+  user_data_template_rendered = templatefile(local.custom_install_tpl, local.custom_data_args)
   custom_data_args = {
 
     # https://developer.hashicorp.com/boundary/docs/configuration/controller
@@ -62,7 +64,7 @@ resource "aws_launch_template" "boundary" {
   image_id      = coalesce(local.ami_id_list...)
   instance_type = var.ec2_instance_size
   key_name      = var.ec2_ssh_key_pair
-  user_data     = base64encode(templatefile("${path.module}/templates/boundary_custom_data.sh.tpl", local.custom_data_args))
+  user_data     = base64gzip(local.user_data_template_rendered)
 
   iam_instance_profile {
     name = aws_iam_instance_profile.boundary_ec2.name

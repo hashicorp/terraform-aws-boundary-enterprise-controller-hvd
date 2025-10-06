@@ -13,7 +13,9 @@ BOUNDARY_DIR_LOGS="/var/log/boundary"
 BOUNDARY_DIR_BIN="${boundary_dir_bin}"
 BOUNDARY_USER="boundary"
 BOUNDARY_GROUP="boundary"
-BOUNDARY_INSTALL_URL="${boundary_install_url}"
+PRODUCT="boundary"
+BOUNDARY_VERSION="${boundary_version}"
+VERSION=$BOUNDARY_VERSION
 REQUIRED_PACKAGES="jq unzip"
 AWS_REGION="${aws_region}"
 ADDITIONAL_PACKAGES="${additional_package_names}"
@@ -27,11 +29,34 @@ function log {
   echo "$log_entry" | tee -a "$LOGFILE"
 }
 
+function detect_architecture {
+  local ARCHITECTURE=""
+  local OS_ARCH_DETECTED=$(uname -m)
+
+  case "$OS_ARCH_DETECTED" in
+    "x86_64"*)
+      ARCHITECTURE="linux_amd64"
+      ;;
+    "aarch64"*)
+      ARCHITECTURE="linux_arm64"
+      ;;
+		"arm"*)
+      ARCHITECTURE="linux_arm"
+			;;
+    *)
+      log "ERROR" "Unsupported architecture detected: '$OS_ARCH_DETECTED'. "
+		  exit_script 1
+  esac
+
+  echo "$ARCHITECTURE"
+
+}
+
 function detect_os_distro {
   local OS_DISTRO_NAME=$(grep "^NAME=" /etc/os-release | cut -d"\"" -f2)
   local OS_DISTRO_DETECTED
 
-  case "$OS_DISTRO_NAME" in 
+  case "$OS_DISTRO_NAME" in
     "Ubuntu"*)
       OS_DISTRO_DETECTED="ubuntu"
       ;;
@@ -47,6 +72,7 @@ function detect_os_distro {
     *)
       log "ERROR" "'$OS_DISTRO_NAME' is not a supported Linux OS distro for Boundary."
       exit_script 1
+			;;
   esac
   echo "$OS_DISTRO_DETECTED"
 }
@@ -61,7 +87,9 @@ function install_prereqs {
   elif [[ "$OS_DISTRO" == "rhel" ]]; then
     yum install -y $REQUIRED_PACKAGES $ADDITIONAL_PACKAGES
   elif [[ "$OS_DISTRO" == "amzn2023" ]]; then
-    yum install -y $REQUIRED_PACKAGES $ADDITIONAL_PACKAGES
+    dnf install -y $REQUIRED_PACKAGES $ADDITIONAL_PACKAGES
+    log "INFO" "Enabling gnupg2-full for Amazon Linux 2023."
+    dnf swap gnupg2-minimal gnupg2-full -y
   else
     log "ERROR" "Unsupported OS distro '$OS_DISTRO'. Exiting."
     exit_script 1
@@ -70,8 +98,8 @@ function install_prereqs {
 
 function install_awscli {
   local OS_DISTRO="$1"
-  
-  if command -v aws > /dev/null; then 
+
+  if command -v aws > /dev/null; then
     log "INFO" "Detected 'aws-cli' is already installed. Skipping."
   else
     log "INFO" "Installing 'aws-cli'."
@@ -135,21 +163,66 @@ function directory_create {
 
   log "INFO" "Done creating necessary directories."
 }
+# checksum_verify downloads the $$PRODUCT binary for extraction and verifies its integrity
+function checksum_verify {
+  local OS_ARCH="$1"
+
+  # https://www.hashicorp.com/en/trust/security
+  # checksum_verify downloads the $$PRODUCT binary and verifies its integrity
+  log "INFO" "Verifying the integrity of the $${PRODUCT} binary."
+  export GNUPGHOME=./.gnupg
+  log "INFO" "Importing HashiCorp GPG key."
+  sudo curl -s https://www.hashicorp.com/.well-known/pgp-key.txt | gpg --import
+
+	log "INFO" "Downloading $${PRODUCT} binary"
+  sudo curl -Os https://releases.hashicorp.com/"$${PRODUCT}"/"$${VERSION}"/"$${PRODUCT}"_"$${VERSION}"_"$${OS_ARCH}".zip
+	log "INFO" "Downloading $${PRODUCT} Enterprise binary checksum files"
+  sudo curl -Os https://releases.hashicorp.com/"$${PRODUCT}"/"$${VERSION}"/"$${PRODUCT}"_"$${VERSION}"_SHA256SUMS
+	log "INFO" "Downloading $${PRODUCT} Enterprise binary checksum signature file"
+  sudo curl -Os https://releases.hashicorp.com/"$${PRODUCT}"/"$${VERSION}"/"$${PRODUCT}"_"$${VERSION}"_SHA256SUMS.sig
+  log "INFO" "Verifying the signature file is untampered."
+  gpg --verify "$${PRODUCT}"_"$${VERSION}"_SHA256SUMS.sig "$${PRODUCT}"_"$${VERSION}"_SHA256SUMS
+	if [[ $? -ne 0 ]]; then
+		log "ERROR" "Gpg verification failed for SHA256SUMS."
+		exit_script 1
+	fi
+  if [ -x "$(command -v sha256sum)" ]; then
+		log "INFO" "Using sha256sum to verify the checksum of the $${PRODUCT} binary."
+		sha256sum -c "$${PRODUCT}"_"$${VERSION}"_SHA256SUMS --ignore-missing
+	else
+		log "INFO" "Using shasum to verify the checksum of the $${PRODUCT} binary."
+		shasum -a 256 -c "$${PRODUCT}"_"$${VERSION}"_SHA256SUMS --ignore-missing
+	fi
+	if [[ $? -ne 0 ]]; then
+		log "ERROR" "Checksum verification failed for the $${PRODUCT} binary."
+		exit_script 1
+	fi
+
+	log "INFO" "Checksum verification passed for the $${PRODUCT} binary."
+
+	log "INFO" "Removing the downloaded files to clean up"
+	sudo rm -f "$${PRODUCT}"_"$${VERSION}"_SHA256SUMS "$${PRODUCT}"_"$${VERSION}"_SHA256SUMS.sig
+
+}
 
 # install_boundary_binary downloads the Boundary binary and puts it in dedicated bin directory
 function install_boundary_binary {
+  local OS_ARCH="$1"
+
   log "INFO" "Installing Boundary binary to: $BOUNDARY_DIR_BIN..."
 
-  # Download the Boundary binary to the dedicated bin directory
-  sudo curl -so $BOUNDARY_DIR_BIN/boundary.zip $BOUNDARY_INSTALL_URL
+	sudo unzip "$${PRODUCT}"_"$${BOUNDARY_VERSION}"_"$${OS_ARCH}".zip  boundary -d $BOUNDARY_DIR_BIN
+	sudo unzip "$${PRODUCT}"_"$${BOUNDARY_VERSION}"_"$${OS_ARCH}".zip -x boundary -d $BOUNDARY_DIR_LICENSE
+	sudo rm -f "$${PRODUCT}"_"$${BOUNDARY_VERSION}"_"$${OS_ARCH}".zip
 
-  # Unzip the Boundary binary
-  sudo unzip $BOUNDARY_DIR_BIN/boundary.zip boundary -d $BOUNDARY_DIR_BIN
-  sudo unzip $BOUNDARY_DIR_BIN/boundary.zip -x boundary -d $BOUNDARY_DIR_LICENSE
+	# Set the permissions for the Boundary binary
+	sudo chmod 0755 $BOUNDARY_DIR_BIN/boundary
+	sudo chown $BOUNDARY_USER:$BOUNDARY_GROUP $BOUNDARY_DIR_BIN/boundary
 
-  sudo rm $BOUNDARY_DIR_BIN/boundary.zip
+	# Create a symlink to the Boundary binary in /usr/local/bin
+	sudo ln -sf $BOUNDARY_DIR_BIN/boundary /usr/local/bin/boundary
 
-  log "INFO" "Done installing Boundary binary."
+	log "INFO" "Boundary binary installed successfully at $BOUNDARY_DIR_BIN/boundary"
 }
 
 function retrieve_license_from_awsssm {
@@ -205,7 +278,7 @@ function generate_boundary_config {
   cat >$BOUNDARY_CONFIG_PATH <<EOF
 disable_mlock = true
 
-telemetry { 
+telemetry {
   prometheus_retention_time = "24h"
   disable_hostname          = true
 }
@@ -217,7 +290,7 @@ controller {
   database {
     url = "postgresql://${boundary_database_user}:${boundary_database_password}@${boundary_database_host}/${boundary_database_name}?sslmode=require"
   }
-  
+
   license = "file:///$BOUNDARY_LICENSE_PATH"
 }
 
@@ -243,7 +316,7 @@ listener "tcp" {
   address            = "0.0.0.0:9203"
   purpose            = "ops"
   tls_disable        = ${boundary_tls_disable}
-  tls_cert_file      = "$BOUNDARY_DIR_TLS/cert.pem" 
+  tls_cert_file      = "$BOUNDARY_DIR_TLS/cert.pem"
   tls_key_file       = "$BOUNDARY_DIR_TLS/key.pem"
 %{ if boundary_tls_ca_bundle_secret_arn != "NONE" ~}
   tls_client_ca_file = "$BOUNDARY_DIR_TLS/bundle.pem"
@@ -373,12 +446,16 @@ function main {
 
   OS_DISTRO=$(detect_os_distro)
   log "INFO" "Detected Linux OS distro is '$OS_DISTRO'."
+	OS_ARCH=$(detect_architecture)
+  log "INFO" "Detected Linux OS architecture is '$OS_ARCH'."
   scrape_vm_info
   install_prereqs "$OS_DISTRO"
   install_awscli "$OS_DISTRO"
   user_group_create
   directory_create
-  install_boundary_binary
+	checksum_verify "$OS_ARCH"
+  log "INFO" "Installing Boundary version $BOUNDARY_VERSION for $OS_ARCH"
+  install_boundary_binary "$OS_ARCH"
   retrieve_license_from_awsssm "${boundary_license_secret_arn}"
   retrieve_certs_from_awssm "${boundary_tls_cert_secret_arn}" "$BOUNDARY_DIR_TLS/cert.pem"
   retrieve_certs_from_awssm "${boundary_tls_privkey_secret_arn}" "$BOUNDARY_DIR_TLS/key.pem"
