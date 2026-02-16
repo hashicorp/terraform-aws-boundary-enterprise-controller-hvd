@@ -234,7 +234,7 @@ function retrieve_license_from_awsssm {
   if [[ -z "$SECRET_ARN" ]]; then
     log "ERROR" "Secret ARN cannot be empty. Exiting."
     exit_script 4
-  elif [[ "$SECRET_ARN" == arn:aws:secretsmanager:* ]]; then
+  elif [[ "$SECRET_ARN" == arn:aws*:secretsmanager:* ]]; then
     log "INFO" "Retrieving value of secret '$SECRET_ARN' from AWS Secrets Manager."
     BOUNDARY_LICENSE=$(aws secretsmanager get-secret-value --region $SECRET_REGION --secret-id $SECRET_ARN --query SecretString --output text)
     echo "$BOUNDARY_LICENSE" >$BOUNDARY_LICENSE_PATH
@@ -256,7 +256,7 @@ function retrieve_certs_from_awssm {
   if [[ -z "$SECRET_ARN" ]]; then
     log "ERROR" "Secret ARN cannot be empty. Exiting."
     exit_script 5
-  elif [[ "$SECRET_ARN" == arn:aws:secretsmanager:* ]]; then
+  elif [[ "$SECRET_ARN" == arn:aws*:secretsmanager:* ]]; then
     log "INFO" "Retrieving value of secret '$SECRET_ARN' from AWS Secrets Manager."
     CERT_DATA=$(aws secretsmanager get-secret-value --region $SECRET_REGION --secret-id $SECRET_ARN --query SecretString --output text)
     echo "$CERT_DATA" | base64 -d >$DESTINATION_PATH
