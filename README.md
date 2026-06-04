@@ -62,24 +62,28 @@ This module supports creating the necessary KMS keys, Root, Recovery, Worker and
     .
     └── environments
         ├── production
-        │   ├── backend.tf
-        │   ├── main.tf
-        │   ├── outputs.tf
-        │   ├── terraform.tfvars
-        │   └── variables.tf
+        │   ├── backend.tf
+        │   ├── main.tf
+        │   ├── outputs.tf
+        │   ├── terraform.tfvars
+        │   ├── variables.tf
+        │   └── variables_provider.tf
         └── sandbox
             ├── backend.tf
             ├── main.tf
             ├── outputs.tf
             ├── terraform.tfvars
-            └── variables.tf
+            ├── variables.tf
+            └── variables_provider.tf
     ```
 
     >📝 Note: in this example, the user will have two separate Boundary deployments; one for their `sandbox` environment, and one for their `production` environment. This is recommended, but not required.
 
+    >📝 Note: `variables_provider.tf` defines provider configuration variables (not module variables) and must be copied from the examples directory.
+
 1. (Optional) Uncomment and update the [S3 remote state backend](https://developer.hashicorp.com/terraform/language/settings/backends/s3) configuration provided in the `backend.tf` file with your own custom values. While this step is highly recommended, it is technically not required to use a remote backend config for your Boundary deployment.
 
-1. Populate your own custom values into the `terraform.tfvars.example` file that was provided, and remove the `.example` file extension such that the file is now named `terraform.tfvars`.
+1. Copy the provided `terraform.tfvars.example` file and rename it to `terraform.tfvars`. Then, replace or validate all of the variable values enclosed in the `< >` characters with your own custom values. Inline helper comments are included with some of the variables to help guide you in setting appropriate values. For detailed information about each input variable, as well as additional optional inputs, refer to the variable descriptions, the [deployment customizations documentation](https://github.com/hashicorp/terraform-aws-boundary-enterprise-controller-hvd/blob/main/docs/boundary-deployment-customizations.md), or the [example README](https://github.com/hashicorp/terraform-aws-boundary-enterprise-controller-hvd/blob/main/examples/default/README.md) for additional configuration guidance.
 
 1. Navigate to the directory of your newly created Terraform configuration for your Boundary Controller deployment, and run `terraform init`, `terraform plan`, and `terraform apply`.
 
@@ -146,20 +150,20 @@ Please note that there is no official Service Level Agreement (SLA) for support 
 ## Requirements
 
 | Name | Version |
-|------|---------|
+| ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.9 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.0 |
 
 ## Providers
 
 | Name | Version |
-|------|---------|
+| ---- | ------- |
 | <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 5.0 |
 
 ## Resources
 
 | Name | Type |
-|------|------|
+| ---- | ---- |
 | [aws_autoscaling_group.boundary](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_group) | resource |
 | [aws_db_parameter_group.boundary](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/db_parameter_group) | resource |
 | [aws_db_subnet_group.boundary](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/db_subnet_group) | resource |
@@ -247,7 +251,7 @@ Please note that there is no official Service Level Agreement (SLA) for support 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
+| ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_api_lb_subnet_ids"></a> [api\_lb\_subnet\_ids](#input\_api\_lb\_subnet\_ids) | List of subnet IDs to use for the API load balancer. If the load balancer is external, then these should be public subnets. | `list(string)` | n/a | yes |
 | <a name="input_boundary_database_password_secret_arn"></a> [boundary\_database\_password\_secret\_arn](#input\_boundary\_database\_password\_secret\_arn) | ARN of AWS Secrets Manager secret for the Boundary RDS Aurora (PostgreSQL) database password. | `string` | n/a | yes |
 | <a name="input_boundary_fqdn"></a> [boundary\_fqdn](#input\_boundary\_fqdn) | Fully qualified domain name of boundary instance. This name should resolve to the load balancer IP address and will be what clients use to access boundary. | `string` | n/a | yes |
@@ -334,7 +338,7 @@ Please note that there is no official Service Level Agreement (SLA) for support 
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | <a name="output_api_lb_dns_name"></a> [api\_lb\_dns\_name](#output\_api\_lb\_dns\_name) | DNS name of the Load Balancer for Boundary clients. |
 | <a name="output_aurora_aws_rds_cluster_endpoint"></a> [aurora\_aws\_rds\_cluster\_endpoint](#output\_aurora\_aws\_rds\_cluster\_endpoint) | Aurora DB cluster instance endpoint. |
 | <a name="output_aurora_rds_cluster_arn"></a> [aurora\_rds\_cluster\_arn](#output\_aurora\_rds\_cluster\_arn) | ARN of Aurora DB cluster. |

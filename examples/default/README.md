@@ -1,17 +1,25 @@
-# Example Scenario - Default
+# Default Example
+
+This directory contains a ready-made Terraform configuration and an example terraform.tfvars file for deploying this module. Refer to the sections below for details on the key settings and their corresponding input variables to deploy your Boundary Controller instance.
+
+## Prerequisites
+
+### AWS Region Configuration
+
+You must explicitly set the `region` variable to your target AWS region (e.g., `region = "us-east-1"`) in your `.tfvars` file. This value is required by the [AWS provider configuration](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#provider-configuration) in `main.tf`. If not set, Terraform will fail with an error since the provider requires a region value.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
-| Name | Version |
-|------|---------|
+| Name                                                    | Version   |
+| ---------------------------------------------------------| -----------|
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.47.0 |
 
 ## Modules
 
-| Name | Source | Version |
-|------|--------|---------|
-| <a name="module_boundary"></a> [boundary](#module\_boundary) | ../.. | n/a |
+| Name                                                         | Source | Version |
+| --------------------------------------------------------------| --------| ---------|
+| <a name="module_boundary"></a> [boundary](#module\_boundary) | ../..  | n/a     |
 
 ## Inputs
 
